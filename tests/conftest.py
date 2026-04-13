@@ -38,7 +38,9 @@ def small_xy_groups() -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     n_total = n_athletes * samples_per_athlete  # 120
 
     # Generate features
-    X = pd.DataFrame(rng.randn(n_total, 5), columns=[f"feat_{i}" for i in range(5)])
+    X = pd.DataFrame(
+        rng.standard_normal((n_total, 5)), columns=[f"feat_{i}" for i in range(5)]
+    )
 
     # Generate balanced labels: 40 positive, 80 negative
     # Distribute evenly: 7-8 positives per athlete
