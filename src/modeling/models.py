@@ -52,7 +52,7 @@ def create_model(
         )
     elif name == "xgboost":
         return XGBClassifier(
-            scale_pos_weight=imbalance_ratio or 1.0,
+            scale_pos_weight=1.0 if imbalance_ratio is None else imbalance_ratio,
             n_estimators=200,
             random_state=random_state,
             eval_metric="logloss",
