@@ -42,7 +42,7 @@ def compute_metrics(
     dict[str, float]
         Metric name -> value.
     """
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
     return {
         "auc_roc": roc_auc_score(y_true, y_prob),
         "auc_pr": average_precision_score(y_true, y_prob),
@@ -112,6 +112,10 @@ def plot_roc_curves(
     ----------
     results : dict
         Model name -> (y_true, y_prob).
+    save_path : Path or None
+        If provided, its stem is used as the figure name and its parent
+        directory name as the subdirectory inside ``reports/figures/``.
+        The figure is not saved to the literal filesystem path.
     """
     fig, ax = plt.subplots(figsize=(8, 8))
     for name, (y_true, y_prob) in results.items():
@@ -132,7 +136,17 @@ def plot_pr_curves(
     results: dict[str, tuple[np.ndarray, np.ndarray]],
     save_path: Path | None = None,
 ) -> plt.Figure:
-    """Plot Precision-Recall curves for multiple models."""
+    """Plot Precision-Recall curves for multiple models.
+
+    Parameters
+    ----------
+    results : dict
+        Model name -> (y_true, y_prob).
+    save_path : Path or None
+        If provided, its stem is used as the figure name and its parent
+        directory name as the subdirectory inside ``reports/figures/``.
+        The figure is not saved to the literal filesystem path.
+    """
     fig, ax = plt.subplots(figsize=(8, 8))
     for name, (y_true, y_prob) in results.items():
         precision, recall, _ = precision_recall_curve(y_true, y_prob)
@@ -153,7 +167,21 @@ def plot_confusion_matrix(
     title: str = "Confusion Matrix",
     save_path: Path | None = None,
 ) -> plt.Figure:
-    """Plot a confusion matrix heatmap."""
+    """Plot a confusion matrix heatmap.
+
+    Parameters
+    ----------
+    y_true : array-like
+        True binary labels.
+    y_pred : array-like
+        Predicted binary labels.
+    title : str
+        Plot title.
+    save_path : Path or None
+        If provided, its stem is used as the figure name and its parent
+        directory name as the subdirectory inside ``reports/figures/``.
+        The figure is not saved to the literal filesystem path.
+    """
     import seaborn as sns
 
     cm = confusion_matrix(y_true, y_pred)

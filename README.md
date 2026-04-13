@@ -60,7 +60,7 @@ This analysis addresses key questions for sports scientists, coaches, and team p
 | Approach | Rows | Columns | Target | Window |
 |----------|------|---------|--------|--------|
 | **Day** | 42,766 | 73 | Binary (0/1) — 1.36% injury rate | 7 days x 10 features |
-| **Week** | 42,798 | 75 | Continuous (0.0-1.5+) → binarized at 0.5 | 3 weeks x 22 features + 3 ratios |
+| **Week** | 42,798 | 72 | Continuous (0.0-1.5+) → binarized at 0.5 | 3 weeks x 22 features + 3 ratios |
 
 **74 athletes** — 27 women, 47 men — national/international level, 800m to marathon.
 
@@ -138,14 +138,11 @@ pip-sync requirements-dev.txt
 # 2. Install pre-commit hooks
 pre-commit install
 
-# 3. Generate sample data for tests
-python3 scripts/generate_sample_data.py
-
-# 4. Run the test suite
+# 3. Run the test suite
 pytest
 pytest --cov=src --cov-report=term-missing  # with coverage
 
-# 5. Run notebooks in order
+# 4. Run notebooks in order
 jupyter notebook notebooks/01_eda_day_approach.ipynb
 ```
 

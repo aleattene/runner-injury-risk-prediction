@@ -22,8 +22,9 @@ def create_model(
     name : str
         One of "logistic_regression", "random_forest", "xgboost".
     imbalance_ratio : float or None
-        Ratio of negative to positive samples (for scale_pos_weight in XGBoost).
-        If None, uses class_weight='balanced' for LogReg and RF.
+        Ratio of negative to positive samples, used as ``scale_pos_weight``
+        in XGBoost. Has no effect on logistic regression or random forest,
+        which always use ``class_weight="balanced"``.
     random_state : int
         Random seed for reproducibility.
 
@@ -42,6 +43,9 @@ def create_model(
     elif name == "random_forest":
         return RandomForestClassifier(
             n_estimators=200,
+            max_depth=10,
+            max_features="sqrt",
+            min_samples_leaf=2,
             class_weight="balanced",
             random_state=random_state,
             n_jobs=-1,

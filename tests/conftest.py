@@ -27,9 +27,9 @@ def sample_week_df() -> pd.DataFrame:
 def small_xy_groups() -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     """Tiny dataset for fast model tests: 120 rows, 5 features, 6 athletes.
 
-    Balanced: 40 positive (33%), 80 negative (67%), with stratification across
-    athletes. Each athlete has ~7 positive and ~13 negative samples, ensuring
-    every fold will contain both classes even with GroupKFold.
+    Near-balanced: 39 positive (32.5%), 81 negative (67.5%), with stratification
+    across athletes. Each athlete has 6-7 positive samples, ensuring every fold
+    will contain both classes even with GroupKFold.
     """
     rng = np.random.default_rng(42)
 
