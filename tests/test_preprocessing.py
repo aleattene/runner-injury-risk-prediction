@@ -96,6 +96,24 @@ class TestScaler:
         assert result.shape == X.shape
 
 
+class TestGetGroupKfold:
+    """Tests for common.get_group_kfold."""
+
+    def test_returns_groupkfold_splitter(self):
+        from src.preprocessing.common import get_group_kfold
+
+        splitter = get_group_kfold(n_splits=3)
+        assert splitter.n_splits == 3
+        assert hasattr(splitter, "split")
+
+    def test_default_n_splits(self):
+        from src.preprocessing.common import get_group_kfold
+
+        splitter = get_group_kfold()
+        # Should use N_CV_FOLDS from config (5 by default)
+        assert splitter.n_splits == 5
+
+
 class TestGetFeatureTargetGroups:
     """Tests for common.get_feature_target_groups."""
 

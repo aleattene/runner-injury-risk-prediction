@@ -112,3 +112,39 @@ class TestComputeDisparityRatios:
         group_metrics = pd.DataFrame({"group": ["A"], "recall": [0.8]})
         with pytest.raises(ValueError, match="not found"):
             compute_disparity_ratios(group_metrics, reference_group="Z")
+
+    def test_reference_metric_is_zero_returns_nan(self):
+        from src.fairness.audit import compute_disparity_ratios
+
+        # Reference group A has recall=0
+        group_metrics = pd.DataFrame(
+            {
+                "group": ["A", "B"],
+                "recall": [0.0, 0.6],
+                "precision": [0.7, 0.5],
+                "f1": [0.75, 0.55],
+                "fpr": [0.1, 0.2],
+                "auc_roc": [0.85, 0.75],
+            }
+        )
+        result = compute_disparity_ratios(group_metrics, reference_group="A")
+        # When ref_val is 0, ratio should be NaN
+        assert pd.isna(result.loc[result["group"] == "B", "recall_ratio"].iloc[0])
+
+    def test_reference_metric_is_nan_returns_nan(self):
+        from src.fairness.audit import compute_disparity_ratios
+
+        # Reference group A has NaN recall
+        group_metrics = pd.DataFrame(
+            {
+                "group": ["A", "B"],
+                "recall": [np.nan, 0.6],
+                "precision": [0.7, 0.5],
+                "f1": [0.75, 0.55],
+                "fpr": [0.1, 0.2],
+                "auc_roc": [0.85, 0.75],
+            }
+        )
+        result = compute_disparity_ratios(group_metrics, reference_group="A")
+        # When ref_val is NaN, ratio should be NaN
+        assert pd.isna(result.loc[result["group"] == "B", "recall_ratio"].iloc[0])

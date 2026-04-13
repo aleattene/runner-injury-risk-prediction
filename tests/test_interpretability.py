@@ -1,5 +1,8 @@
 """Tests for SHAP interpretability module."""
 
+from pathlib import Path
+from unittest.mock import patch
+
 from src.modeling.models import create_model
 
 
@@ -43,3 +46,73 @@ class TestGetTopFeatures:
         top = get_top_features(shap_values, n=3)
         assert len(top) == 3
         assert all(isinstance(f, str) for f in top)
+
+
+class TestPlotShapSummary:
+    """Tests for plot_shap_summary."""
+
+    def test_returns_figure(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_summary,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("logistic_regression")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        fig = plot_shap_summary(shap_values, X)
+        assert fig is not None
+        assert hasattr(fig, "savefig")
+
+    def test_with_save_path(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_summary,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("logistic_regression")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        with patch("src.interpretability.shap_analysis.save_figure") as mock_save:
+            fig = plot_shap_summary(shap_values, X, save_path=Path("dummy.png"))
+            assert fig is not None
+            mock_save.assert_called_once()
+
+
+class TestPlotShapDependence:
+    """Tests for plot_shap_dependence."""
+
+    def test_returns_figure(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_dependence,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("logistic_regression")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        feature = X.columns[0]
+        fig = plot_shap_dependence(shap_values, X, feature)
+        assert fig is not None
+        assert hasattr(fig, "savefig")
+
+    def test_with_save_path(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_dependence,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("logistic_regression")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        feature = X.columns[0]
+        with patch("src.interpretability.shap_analysis.save_figure") as mock_save:
+            fig = plot_shap_dependence(
+                shap_values, X, feature, save_path=Path("dummy.png")
+            )
+            assert fig is not None
+            mock_save.assert_called_once()

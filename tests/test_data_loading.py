@@ -30,6 +30,40 @@ class TestLoadDayData:
             load_day_data("/nonexistent/path.csv")
 
 
+class TestValidateColumns:
+    """Tests for _validate_columns."""
+
+    def test_missing_columns_raises(self):
+        import pandas as pd
+
+        from src.data_loading import _validate_columns
+
+        df = pd.DataFrame({"col_a": [1, 2], "col_b": [3, 4]})
+        expected = ["col_a", "col_b", "col_c"]
+        with pytest.raises(ValueError, match="Missing"):
+            _validate_columns(df, expected, "test_dataset")
+
+    def test_extra_columns_raises(self):
+        import pandas as pd
+
+        from src.data_loading import _validate_columns
+
+        df = pd.DataFrame({"col_a": [1, 2], "col_b": [3, 4], "col_c": [5, 6]})
+        expected = ["col_a", "col_b"]
+        with pytest.raises(ValueError, match="Extra"):
+            _validate_columns(df, expected, "test_dataset")
+
+    def test_valid_columns_passes(self):
+        import pandas as pd
+
+        from src.data_loading import _validate_columns
+
+        df = pd.DataFrame({"col_a": [1, 2], "col_b": [3, 4]})
+        expected = ["col_a", "col_b"]
+        # Should not raise
+        _validate_columns(df, expected, "test_dataset")
+
+
 class TestLoadWeekData:
     """Tests for load_week_data."""
 

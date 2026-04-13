@@ -1,6 +1,7 @@
 """Tests for utility modules — logging, reproducibility, plotting."""
 
 import logging
+from unittest.mock import patch
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,6 +30,18 @@ class TestReproducibility:
         b = rng_b.random(5)
         np.testing.assert_array_equal(a, b)
 
+    def test_set_global_seed_with_custom_seed(self):
+        from src.utils.reproducibility import set_global_seed
+
+        set_global_seed(123)
+        # Just verify it runs without error
+
+    def test_set_global_seed_with_default(self):
+        from src.utils.reproducibility import set_global_seed
+
+        set_global_seed()
+        # Just verify it runs without error
+
 
 class TestPlotting:
     """Tests for plotting utilities."""
@@ -38,17 +51,29 @@ class TestPlotting:
 
         set_style()
 
-    def test_save_figure(self, tmp_path):
+    def test_save_figure_without_subdir(self, tmp_path):
+        from src.utils.plotting import save_figure
 
         fig, ax = plt.subplots()
         ax.plot([1, 2, 3])
 
-        # Save to tmp_path instead of project figures dir
-        path = tmp_path / "test_fig.png"
-        fig.savefig(path)
-        plt.close(fig)
-        assert path.exists()
-        assert path.stat().st_size > 0
+        with patch("src.utils.plotting.FIGURES_DIR", tmp_path):
+            path = save_figure(fig, "test_fig")
+            assert path.exists()
+            assert path.stat().st_size > 0
+            assert path.name == "test_fig.png"
+
+    def test_save_figure_with_subdir(self, tmp_path):
+        from src.utils.plotting import save_figure
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+
+        with patch("src.utils.plotting.FIGURES_DIR", tmp_path):
+            path = save_figure(fig, "test_fig", subdir="subfolder")
+            assert path.exists()
+            assert path.stat().st_size > 0
+            assert path.parent.name == "subfolder"
 
     def test_injury_palette_has_both_classes(self):
         from src.utils.plotting import INJURY_PALETTE
