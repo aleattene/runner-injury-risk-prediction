@@ -11,3 +11,4 @@ def set_global_seed(seed: int = RANDOM_SEED) -> None:
     """Set random seed for Python, NumPy, and scikit-learn reproducibility."""
     random.seed(seed)
     np.random.seed(seed)
+    np.random.default_rng(seed)
