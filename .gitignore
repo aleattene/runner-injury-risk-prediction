@@ -205,3 +205,24 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# macOS
+.DS_Store
+
+# Data local files
+data/
+*.duckdb
+*.duckdb.wal
+
+# Local utility scripts
+scripts/
+
+# Claude Code
+.claude/
+
+# TEMP — local-only project notes (not for GitHub)
+CLAUDE.md
+TODO.md
+SKILLS.md
+docs/
+*.parquet
