@@ -24,9 +24,6 @@ jobs:
           pip-compile requirements-test.in
           pip install -r requirements-test.txt
 
-      - name: Generate sample data
-        run: python scripts/generate_sample_data.py
-
       - name: Run tests with coverage
         run: pytest --cov=src --cov-report=term-missing --cov-report=xml
 
