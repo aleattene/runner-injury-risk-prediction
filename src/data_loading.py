@@ -168,6 +168,6 @@ def load_week_data(path: str | None = None) -> pd.DataFrame:
 
 
 def get_feature_columns(df: pd.DataFrame) -> list[str]:
-    """Return all columns except metadata (athlete_id, injury, date, rel features)."""
+    """Return all columns except metadata columns (athlete_id, injury, date)."""
     exclude = {ATHLETE_ID_COL, INJURY_COL, DATE_COL}
     return [c for c in df.columns if c not in exclude]

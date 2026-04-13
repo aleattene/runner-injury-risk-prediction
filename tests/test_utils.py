@@ -24,10 +24,12 @@ class TestReproducibility:
     """Tests for reproducibility.set_global_seed."""
 
     def test_numpy_deterministic_after_seed(self):
-        rng_a = np.random.default_rng(42)
-        a = rng_a.random(5)
-        rng_b = np.random.default_rng(42)
-        b = rng_b.random(5)
+        from src.utils.reproducibility import set_global_seed
+
+        set_global_seed(42)
+        a = np.random.rand(5)
+        set_global_seed(42)
+        b = np.random.rand(5)
         np.testing.assert_array_equal(a, b)
 
     def test_set_global_seed_with_custom_seed(self):

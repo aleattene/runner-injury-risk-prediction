@@ -2,7 +2,7 @@
 
 ![Test & Coverage](https://github.com/aleattene/runner-injury-risk-prediction/actions/workflows/test.yml/badge.svg)
 ![Lint & Format](https://github.com/aleattene/runner-injury-risk-prediction/actions/workflows/lint.yml/badge.svg)
-[![codecov](https://codecov.io/gh/aleattene/sardinia-hospitality-intelligence/graph/badge.svg?token=1TXMAP8EU8)](https://codecov.io/gh/aleattene/sardinia-hospitality-intelligence)
+[![codecov](https://codecov.io/gh/aleattene/runner-injury-risk-prediction/graph/badge.svg?token=1TXMAP8EU8)](https://codecov.io/gh/aleattene/runner-injury-risk-prediction)
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![Pandas](https://img.shields.io/badge/Pandas-Data%20Analysis-blue)
 ![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange)

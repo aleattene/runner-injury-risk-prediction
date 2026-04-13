@@ -51,11 +51,11 @@ def plot_shap_summary(
     save_path: Path | None = None,
 ) -> plt.Figure:
     """Create a SHAP summary (beeswarm) plot."""
-    fig, ax = plt.subplots(figsize=(10, 8))
     shap.summary_plot(shap_values, X, max_display=max_display, show=False)
+    fig = plt.gcf()
     if save_path:
-        save_figure(plt.gcf(), save_path.stem, save_path.parent.name or None)
-    return plt.gcf()
+        save_figure(fig, save_path.stem, save_path.parent.name or None)
+    return fig
 
 
 def plot_shap_dependence(
