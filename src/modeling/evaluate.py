@@ -58,9 +58,9 @@ def compute_metrics(
     return {
         "auc_roc": auc_roc,
         "auc_pr": auc_pr,
-        "recall": recall_score(y_true, y_pred),
+        "recall": recall_score(y_true, y_pred, zero_division=0),
         "precision": precision_score(y_true, y_pred, zero_division=0),
-        "f1": f1_score(y_true, y_pred),
+        "f1": f1_score(y_true, y_pred, zero_division=0),
         "specificity": tn / (tn + fp) if (tn + fp) > 0 else 0.0,
         "brier_score": brier_score_loss(y_true, y_prob),
         "tp": int(tp),
@@ -99,7 +99,7 @@ def find_optimal_threshold(
         if metric == "f1":
             score = f1_score(y_true, y_pred, zero_division=0)
         elif metric == "recall":
-            recall = recall_score(y_true, y_pred)
+            recall = recall_score(y_true, y_pred, zero_division=0)
             prec = precision_score(y_true, y_pred, zero_division=0)
 
             # Track best unconstrained recall for fallback
@@ -159,6 +159,13 @@ def plot_roc_curves(
     """
     fig, ax = plt.subplots(figsize=(8, 8))
     for name, (y_true, y_prob) in results.items():
+        if np.unique(y_true).size < 2:
+            logger.warning(
+                "Skipping ROC curve for %s because y_true contains only one class.",
+                name,
+            )
+            ax.plot([], [], label=f"{name} (AUC = NaN)")
+            continue
         fpr, tpr, _ = roc_curve(y_true, y_prob)
         auc = roc_auc_score(y_true, y_prob)
         ax.plot(fpr, tpr, label=f"{name} (AUC = {auc:.3f})")
@@ -168,7 +175,7 @@ def plot_roc_curves(
     ax.set_title("ROC Curves")
     ax.legend(loc="lower right")
     if save_path:
-        save_figure(fig, save_path.stem, save_path.parent.name or None)
+        save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
     return fig
 
 
@@ -189,6 +196,13 @@ def plot_pr_curves(
     """
     fig, ax = plt.subplots(figsize=(8, 8))
     for name, (y_true, y_prob) in results.items():
+        if np.unique(y_true).size < 2:
+            logger.warning(
+                "Skipping PR curve for %s because y_true contains only one class.",
+                name,
+            )
+            ax.plot([], [], label=f"{name} (AP = NaN)")
+            continue
         precision, recall, _ = precision_recall_curve(y_true, y_prob)
         ap = average_precision_score(y_true, y_prob)
         ax.plot(recall, precision, label=f"{name} (AP = {ap:.3f})")
@@ -197,7 +211,7 @@ def plot_pr_curves(
     ax.set_title("Precision-Recall Curves")
     ax.legend(loc="upper right")
     if save_path:
-        save_figure(fig, save_path.stem, save_path.parent.name or None)
+        save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
     return fig
 
 
@@ -239,7 +253,7 @@ def plot_confusion_matrix(
     ax.set_ylabel("Actual")
     ax.set_title(title)
     if save_path:
-        save_figure(fig, save_path.stem, save_path.parent.name or None)
+        save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
     return fig
 
 

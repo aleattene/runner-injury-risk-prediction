@@ -35,7 +35,9 @@ def set_style() -> None:
     )
 
 
-def save_figure(fig: plt.Figure, name: str, subdir: str | None = None) -> Path:
+def save_figure(
+    fig: plt.Figure, name: str, subdir: str | None = None, close: bool = True
+) -> Path:
     """Save a figure to reports/figures/ with consistent settings.
 
     Parameters
@@ -46,6 +48,8 @@ def save_figure(fig: plt.Figure, name: str, subdir: str | None = None) -> Path:
         File name (without extension).
     subdir : str or None
         Optional subdirectory inside figures/.
+    close : bool
+        If True, close the figure after saving (default True).
 
     Returns
     -------
@@ -56,5 +60,6 @@ def save_figure(fig: plt.Figure, name: str, subdir: str | None = None) -> Path:
     target_dir.mkdir(parents=True, exist_ok=True)
     path = target_dir / f"{name}.png"
     fig.savefig(path)
-    plt.close(fig)
+    if close:
+        plt.close(fig)
     return path
