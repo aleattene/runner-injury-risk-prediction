@@ -2,7 +2,7 @@
 
 Since the dataset has no demographic attributes (age, sex, ethnicity are masked),
 this module constructs proxy groups from training data characteristics:
-- Training volume quartiles (high vs low volume athletes)
+- Training volume median split (high vs low volume athletes)
 - Injury history (ever-injured vs never-injured in training set)
 - Data density (many vs few observations per athlete)
 """
