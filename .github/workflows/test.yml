@@ -20,8 +20,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pip-tools
-          pip-compile requirements-test.in
           pip install -r requirements-test.txt
 
       - name: Run tests with coverage

@@ -64,10 +64,25 @@ def plot_shap_dependence(
     feature: str,
     save_path: Path | None = None,
 ) -> plt.Figure:
-    """Create a SHAP dependence plot for a single feature."""
+    """Create a SHAP dependence plot for a single feature.
+
+    For multi-output SHAP values (e.g., binary tree classifiers that return
+    shape (n_samples, n_features, 2)), this plots the positive class
+    (last output) so that shap.dependence_plot receives the required 2D array.
+    """
     fig, ax = plt.subplots(figsize=(8, 6))
-    shap.dependence_plot(feature, shap_values.values, X, show=False, ax=ax)
-    ax.set_title(f"SHAP Dependence: {feature}")
+
+    # Handle both 2D (linear) and 3D (tree) SHAP arrays
+    dependence_values = np.asarray(shap_values.values)
+    output_suffix = ""
+    if dependence_values.ndim == 3:
+        # For binary classification: select positive class (last output)
+        # Shape: (n_samples, n_features, 2) → (n_samples, n_features)
+        dependence_values = dependence_values[:, :, -1]
+        output_suffix = " (positive class)"
+
+    shap.dependence_plot(feature, dependence_values, X, show=False, ax=ax)
+    ax.set_title(f"SHAP Dependence: {feature}{output_suffix}")
     if save_path:
         save_figure(fig, save_path.stem, save_path.parent.name or None)
     return fig

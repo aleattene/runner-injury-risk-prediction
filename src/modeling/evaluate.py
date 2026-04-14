@@ -43,9 +43,21 @@ def compute_metrics(
         Metric name -> value.
     """
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
+
+    # Guard against single-class y_true (common in small imbalanced splits)
+    if np.unique(y_true).size < 2:
+        logger.warning(
+            "Only one class present in y_true; returning NaN for auc_roc and auc_pr."
+        )
+        auc_roc = np.nan
+        auc_pr = np.nan
+    else:
+        auc_roc = roc_auc_score(y_true, y_prob)
+        auc_pr = average_precision_score(y_true, y_prob)
+
     return {
-        "auc_roc": roc_auc_score(y_true, y_prob),
-        "auc_pr": average_precision_score(y_true, y_prob),
+        "auc_roc": auc_roc,
+        "auc_pr": auc_pr,
         "recall": recall_score(y_true, y_pred),
         "precision": precision_score(y_true, y_pred, zero_division=0),
         "f1": f1_score(y_true, y_pred),
@@ -76,22 +88,50 @@ def find_optimal_threshold(
     thresholds = np.arange(0.05, 0.95, 0.01)
     best_score: float = 0.0
     best_threshold: float = 0.5
+    found_valid_threshold: bool = False
+
+    # For recall metric, track best unconstrained threshold as fallback
+    fallback_score: float = 0.0
+    fallback_threshold: float = 0.5
 
     for t in thresholds:
         y_pred = (y_prob >= t).astype(int)
         if metric == "f1":
             score = f1_score(y_true, y_pred, zero_division=0)
         elif metric == "recall":
+            recall = recall_score(y_true, y_pred)
             prec = precision_score(y_true, y_pred, zero_division=0)
+
+            # Track best unconstrained recall for fallback
+            if recall > fallback_score:
+                fallback_score = recall
+                fallback_threshold = float(t)
+
+            # Skip threshold if precision constraint not met
             if prec < 0.05:
                 continue
-            score = recall_score(y_true, y_pred)
+            score = recall
         else:
             raise ValueError(f"Unsupported metric: {metric}")
 
         if score > best_score:
             best_score = score
             best_threshold = float(t)
+            found_valid_threshold = True
+
+    # For recall metric, if no threshold satisfied precision constraint,
+    # fall back to best unconstrained recall with warning
+    if metric == "recall" and not found_valid_threshold:
+        logger.warning(
+            "No threshold satisfied the minimum precision constraint "
+            "(precision >= 0.05) for metric=%s; falling back to the best "
+            "unconstrained recall threshold %.2f (score=%.4f).",
+            metric,
+            fallback_threshold,
+            fallback_score,
+        )
+        best_threshold = fallback_threshold
+        best_score = fallback_score
 
     logger.info(
         "Optimal threshold (metric=%s): %.2f (score=%.4f)",
