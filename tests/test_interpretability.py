@@ -18,13 +18,12 @@ class TestComputeShapValues:
         shap_values = compute_shap_values(model, X)
         # Tree models may return 2D or 3D SHAP arrays depending on version.
         # Validate the essential invariants: correct sample and feature count.
-        assert shap_values.ndim in (2, 3), f"Expected 2D or 3D, got {shap_values.ndim}D"
-        assert shap_values.shape[0] == X.shape[0], "Mismatch in number of samples"
-        assert shap_values.shape[1] == X.shape[1], "Mismatch in number of features"
-        if shap_values.ndim == 3:
-            assert (
-                shap_values.shape[2] == 2
-            ), "Expected binary classification (2 classes)"
+        values = shap_values.values
+        assert values.ndim in (2, 3), f"Expected 2D or 3D, got {values.ndim}D"
+        assert values.shape[0] == X.shape[0], "Mismatch in number of samples"
+        assert values.shape[1] == X.shape[1], "Mismatch in number of features"
+        if values.ndim == 3:
+            assert values.shape[2] == 2, "Expected binary classification (2 classes)"
 
     def test_shap_with_logistic_regression(self, small_xy_groups):
         from src.interpretability.shap_analysis import compute_shap_values
@@ -34,7 +33,7 @@ class TestComputeShapValues:
         model.fit(X, y)
         shap_values = compute_shap_values(model, X)
         # Linear models return (n_samples, n_features) shape
-        assert shap_values.shape == X.shape
+        assert shap_values.values.shape == X.shape
 
 
 class TestGetTopFeatures:
