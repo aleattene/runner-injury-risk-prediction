@@ -1,4 +1,4 @@
-"""SHAP-based model interpretability — summary, dependence, and force plots."""
+"""SHAP-based model interpretability — summary and dependence plots."""
 
 import logging
 from pathlib import Path

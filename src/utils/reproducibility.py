@@ -1,4 +1,4 @@
-"""Reproducibility utilities — seed management and environment snapshot."""
+"""Reproducibility utilities — seed management."""
 
 import random
 
