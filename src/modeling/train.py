@@ -32,8 +32,8 @@ def cross_validate_model(
     Returns
     -------
     dict[str, np.ndarray]
-        Keys are ``test_{metric}`` and ``fit_time``. Values are per-fold score
-        arrays.
+        Keys include ``test_{metric}``, ``fit_time``, and ``score_time``.
+        Values are per-fold arrays.
     """
     cv = GroupKFold(n_splits=n_splits)
     logger.info(

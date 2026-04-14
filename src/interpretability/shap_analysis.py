@@ -54,7 +54,7 @@ def plot_shap_summary(
     shap.summary_plot(shap_values, X, max_display=max_display, show=False)
     fig = plt.gcf()
     if save_path:
-        save_figure(fig, save_path.stem, save_path.parent.name or None)
+        save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
     return fig
 
 
@@ -84,7 +84,7 @@ def plot_shap_dependence(
     shap.dependence_plot(feature, dependence_values, X, show=False, ax=ax)
     ax.set_title(f"SHAP Dependence: {feature}{output_suffix}")
     if save_path:
-        save_figure(fig, save_path.stem, save_path.parent.name or None)
+        save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
     return fig
 
 

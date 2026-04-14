@@ -238,7 +238,7 @@ def plot_confusion_matrix(
     """
     import seaborn as sns
 
-    cm = confusion_matrix(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     fig, ax = plt.subplots(figsize=(6, 5))
     sns.heatmap(
         cm,
