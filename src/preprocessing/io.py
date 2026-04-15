@@ -15,16 +15,24 @@ logger: logging.Logger = logging.getLogger(__name__)
 def _validate_identifier(identifier: str) -> None:
     """Validate identifier to prevent path traversal attacks.
 
-    Raises ValueError if identifier contains path separators or absolute paths.
+    Raises ValueError if identifier is empty, contains path separators,
+    parent-directory segments (..), or is an absolute path.
     """
-    if "/" in identifier or "\\" in identifier or ".." in identifier:
-        msg = (
-            f"Invalid identifier '{identifier}': "
-            "contains path separators or '..' segments"
-        )
+    if not identifier:
+        msg = "Invalid identifier: must not be empty"
         raise ValueError(msg)
+
+    if "/" in identifier or "\\" in identifier:
+        msg = f"Invalid identifier '{identifier}': contains path separators"
+        raise ValueError(msg)
+
     if Path(identifier).is_absolute():
         msg = f"Invalid identifier '{identifier}': must be relative (no absolute path)"
+        raise ValueError(msg)
+
+    # Reject ".." as a path component (not just substring)
+    if ".." in Path(identifier).parts:
+        msg = f"Invalid identifier '{identifier}': contains '..' segments"
         raise ValueError(msg)
 
 
