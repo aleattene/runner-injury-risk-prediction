@@ -54,6 +54,8 @@ pandas==3.0.2
     #   shap
 pillow==12.2.0
     # via matplotlib
+pyarrow==23.0.1
+    # via -r requirements.in
 pyparsing==3.3.2
     # via matplotlib
 python-dateutil==2.9.0.post0

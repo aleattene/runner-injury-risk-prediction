@@ -63,6 +63,8 @@ pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
+pyarrow==23.0.1
+    # via -r requirements.in
 pygments==2.20.0
     # via pytest
 pyparsing==3.3.2

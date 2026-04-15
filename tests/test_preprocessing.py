@@ -1,9 +1,12 @@
-"""Tests for preprocessing modules — sentinel handling, splitting, binarization."""
+"""Tests for preprocessing modules — sentinel handling, splitting, binarization, I/O."""
 
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
 import pytest
 
-from src.config import ATHLETE_ID_COL, SENTINEL_VALUE
+from src.config import ATHLETE_ID_COL, INJURY_COL, SENTINEL_VALUE
 
 
 class TestSentinelHandling:
@@ -127,3 +130,40 @@ class TestGetFeatureTargetGroups:
         assert len(y) == len(sample_day_df)
         assert len(groups) == len(sample_day_df)
         assert X.shape[1] == len(feature_cols)
+
+
+class TestIO:
+    """Tests for preprocessing.io save/load helpers."""
+
+    def test_save_load_splits_roundtrip(self, tmp_path: Path):
+        from src.preprocessing.io import load_splits, save_splits
+
+        train = pd.DataFrame(
+            {ATHLETE_ID_COL: [1, 1, 2], INJURY_COL: [0, 1, 0], "feat": [0.1, 0.2, 0.3]}
+        )
+        test = pd.DataFrame({ATHLETE_ID_COL: [3], INJURY_COL: [0], "feat": [0.4]})
+        save_splits(train, test, prefix="test", output_dir=tmp_path)
+        loaded_train, loaded_test = load_splits(prefix="test", input_dir=tmp_path)
+
+        pd.testing.assert_frame_equal(loaded_train, train)
+        pd.testing.assert_frame_equal(loaded_test, test)
+
+    def test_save_load_scaler_roundtrip(self, tmp_path: Path):
+        from src.preprocessing.day_preprocessor import fit_scaler
+        from src.preprocessing.io import load_scaler, save_scaler
+
+        X = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [4.0, 5.0, 6.0]})
+        scaler = fit_scaler(X)
+        save_scaler(scaler, name="test_scaler", output_dir=tmp_path)
+        loaded = load_scaler(name="test_scaler", input_dir=tmp_path)
+
+        np.testing.assert_array_almost_equal(scaler.mean_, loaded.mean_)
+        np.testing.assert_array_almost_equal(scaler.scale_, loaded.scale_)
+
+    def test_load_missing_file_raises(self, tmp_path: Path):
+        from src.preprocessing.io import load_scaler, load_splits
+
+        with pytest.raises(FileNotFoundError):
+            load_splits(prefix="nonexistent", input_dir=tmp_path)
+        with pytest.raises(FileNotFoundError):
+            load_scaler(name="nonexistent", input_dir=tmp_path)
