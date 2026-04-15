@@ -12,6 +12,22 @@ from src.config import PROCESSED_DATA_DIR
 logger: logging.Logger = logging.getLogger(__name__)
 
 
+def _validate_identifier(identifier: str) -> None:
+    """Validate identifier to prevent path traversal attacks.
+
+    Raises ValueError if identifier contains path separators or absolute paths.
+    """
+    if "/" in identifier or "\\" in identifier or ".." in identifier:
+        msg = (
+            f"Invalid identifier '{identifier}': "
+            "contains path separators or '..' segments"
+        )
+        raise ValueError(msg)
+    if Path(identifier).is_absolute():
+        msg = f"Invalid identifier '{identifier}': must be relative (no absolute path)"
+        raise ValueError(msg)
+
+
 def save_splits(
     train_df: pd.DataFrame,
     test_df: pd.DataFrame,
@@ -22,6 +38,7 @@ def save_splits(
 
     Files are named ``{prefix}_train.parquet`` and ``{prefix}_test.parquet``.
     """
+    _validate_identifier(prefix)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     train_path: Path = output_dir / f"{prefix}_train.parquet"
@@ -45,6 +62,7 @@ def load_splits(
     input_dir: Path = PROCESSED_DATA_DIR,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load train/test DataFrames from Parquet files."""
+    _validate_identifier(prefix)
     train_path: Path = input_dir / f"{prefix}_train.parquet"
     test_path: Path = input_dir / f"{prefix}_test.parquet"
 
@@ -73,6 +91,7 @@ def save_scaler(
     output_dir: Path = PROCESSED_DATA_DIR,
 ) -> None:
     """Persist a fitted StandardScaler with joblib."""
+    _validate_identifier(name)
     output_dir.mkdir(parents=True, exist_ok=True)
     path: Path = output_dir / f"{name}.pkl"
     joblib.dump(scaler, path)
@@ -83,8 +102,21 @@ def load_scaler(
     name: str,
     input_dir: Path = PROCESSED_DATA_DIR,
 ) -> StandardScaler:
-    """Load a fitted StandardScaler from disk."""
-    path: Path = input_dir / f"{name}.pkl"
+    """Load a fitted StandardScaler from disk.
+
+    Security note:
+        ``joblib.load()`` deserializes pickle data and must only be used with
+        trusted, locally generated scaler artifacts. Do not point this function
+        at untrusted directories or externally supplied ``.pkl`` files.
+    """
+    _validate_identifier(name)
+    base_dir: Path = input_dir.resolve()
+    path: Path = (base_dir / f"{name}.pkl").resolve()
+    try:
+        path.relative_to(base_dir)
+    except ValueError as exc:
+        msg = f"Refusing to load scaler from outside the trusted directory: {path}"
+        raise ValueError(msg) from exc
     if not path.exists():
         msg = f"Scaler file not found: {path}"
         raise FileNotFoundError(msg)
