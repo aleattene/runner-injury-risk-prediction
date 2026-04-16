@@ -116,7 +116,7 @@ def get_top_features(shap_values: shap.Explanation, n: int = 10) -> list[str]:
     Handles both 2D (linear models) and 3D (tree-based models) SHAP arrays.
     """
     importance = get_shap_importance_dict(shap_values)
-    sorted_features = sorted(importance, key=importance.get, reverse=True)  # type: ignore[arg-type]
+    sorted_features = sorted(importance, key=lambda f: importance[f], reverse=True)
     return sorted_features[:n]
 
 
@@ -169,6 +169,7 @@ def compare_feature_importance(
     shap_importance: dict[str, float],
     builtin_importance: dict[str, float],
     top_n: int = 15,
+    builtin_label: str = "XGBoost Gain",
     save_path: Path | None = None,
 ) -> plt.Figure:
     """Create a side-by-side bar chart comparing SHAP vs built-in importance.
@@ -181,6 +182,8 @@ def compare_feature_importance(
         Feature name → model built-in importance (e.g., XGBoost gain).
     top_n : int
         Number of top features to display (by SHAP rank).
+    builtin_label : str
+        Label for the built-in importance axis and title.
     save_path : Path or None
         If given, save the figure.
 
@@ -190,9 +193,10 @@ def compare_feature_importance(
         The comparison chart figure.
     """
     # Sort by SHAP importance, take top_n
-    sorted_features = sorted(  # type: ignore[arg-type]
-        shap_importance, key=shap_importance.get, reverse=True
+    sorted_features = sorted(
+        shap_importance, key=lambda f: shap_importance[f], reverse=True
     )[:top_n]
+    n_bars = len(sorted_features)
 
     shap_vals = [shap_importance[f] for f in sorted_features]
     builtin_vals = [builtin_importance.get(f, 0.0) for f in sorted_features]
@@ -200,20 +204,20 @@ def compare_feature_importance(
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     # SHAP importance (left)
-    axes[0].barh(range(top_n), shap_vals[::-1], color="#2196F3")
-    axes[0].set_yticks(range(top_n))
+    axes[0].barh(range(n_bars), shap_vals[::-1], color="#2196F3")
+    axes[0].set_yticks(range(n_bars))
     axes[0].set_yticklabels(sorted_features[::-1])
     axes[0].set_xlabel("Mean |SHAP value|")
     axes[0].set_title("SHAP Importance")
 
     # Built-in importance (right)
-    axes[1].barh(range(top_n), builtin_vals[::-1], color="#FF9800")
-    axes[1].set_yticks(range(top_n))
+    axes[1].barh(range(n_bars), builtin_vals[::-1], color="#FF9800")
+    axes[1].set_yticks(range(n_bars))
     axes[1].set_yticklabels(sorted_features[::-1])
-    axes[1].set_xlabel("XGBoost Gain")
+    axes[1].set_xlabel(builtin_label)
     axes[1].set_title("Built-in Importance")
 
-    fig.suptitle("Feature Importance: SHAP vs XGBoost Gain", fontsize=14)
+    fig.suptitle(f"Feature Importance: SHAP vs {builtin_label}", fontsize=14)
     fig.tight_layout()
 
     if save_path:
