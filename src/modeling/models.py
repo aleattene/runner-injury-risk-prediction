@@ -1,13 +1,19 @@
 """Model factory — creates unfitted estimators for the modeling pipeline."""
 
 from sklearn.base import BaseEstimator
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 
 from src.config import RANDOM_SEED
 
-SUPPORTED_MODELS: list[str] = ["logistic_regression", "random_forest", "xgboost"]
+SUPPORTED_MODELS: list[str] = [
+    "dummy",
+    "logistic_regression",
+    "random_forest",
+    "xgboost",
+]
 
 
 def create_model(
@@ -20,7 +26,7 @@ def create_model(
     Parameters
     ----------
     name : str
-        One of "logistic_regression", "random_forest", "xgboost".
+        One of "dummy", "logistic_regression", "random_forest", "xgboost".
     imbalance_ratio : float or None
         Ratio of negative to positive samples, used as ``scale_pos_weight``
         in XGBoost. Has no effect on logistic regression or random forest,
@@ -33,12 +39,14 @@ def create_model(
     BaseEstimator
         Unfitted scikit-learn compatible estimator.
     """
-    if name == "logistic_regression":
+    if name == "dummy":
+        return DummyClassifier(strategy="stratified", random_state=random_state)
+    elif name == "logistic_regression":
         return LogisticRegression(
             class_weight="balanced",
             max_iter=1000,
             random_state=random_state,
-            solver="saga",
+            solver="lbfgs",
         )
     elif name == "random_forest":
         return RandomForestClassifier(
@@ -56,6 +64,7 @@ def create_model(
             n_estimators=200,
             random_state=random_state,
             eval_metric="logloss",
+            verbosity=0,
             n_jobs=-1,
         )
     else:
