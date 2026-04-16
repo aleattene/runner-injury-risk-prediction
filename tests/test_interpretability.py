@@ -3,6 +3,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import matplotlib.pyplot as plt
+
 from src.modeling.models import create_model
 
 
@@ -122,3 +124,73 @@ class TestPlotShapDependence:
             )
             assert fig is not None
             mock_save.assert_called_once()
+
+
+class TestPlotShapWaterfall:
+    """Tests for plot_shap_waterfall."""
+
+    def test_returns_figure(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_waterfall,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("random_forest")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        fig = plot_shap_waterfall(shap_values, index=0)
+        assert fig is not None
+        assert hasattr(fig, "savefig")
+        plt.close("all")
+
+    def test_with_save_path(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_waterfall,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("random_forest")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        with patch("src.interpretability.shap_analysis.save_figure") as mock_save:
+            fig = plot_shap_waterfall(shap_values, index=0, save_path=Path("dummy.png"))
+            assert fig is not None
+            mock_save.assert_called_once()
+        plt.close("all")
+
+
+class TestGetShapImportanceDict:
+    """Tests for get_shap_importance_dict."""
+
+    def test_returns_dict_with_all_features(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            get_shap_importance_dict,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("random_forest")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        importance = get_shap_importance_dict(shap_values)
+        assert isinstance(importance, dict)
+        assert len(importance) == X.shape[1]
+        assert all(v >= 0 for v in importance.values())
+
+
+class TestCompareFeatureImportance:
+    """Tests for compare_feature_importance."""
+
+    def test_returns_figure(self, small_xy_groups):
+        from src.interpretability.shap_analysis import compare_feature_importance
+
+        X, _, _ = small_xy_groups
+        features = list(X.columns)
+        shap_imp = {f: float(i + 1) for i, f in enumerate(features)}
+        builtin_imp = {f: float(len(features) - i) for i, f in enumerate(features)}
+        fig = compare_feature_importance(shap_imp, builtin_imp, top_n=3)
+        assert fig is not None
+        assert hasattr(fig, "savefig")
+        plt.close("all")
