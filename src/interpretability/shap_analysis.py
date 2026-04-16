@@ -27,9 +27,16 @@ def _extract_positive_class(shap_values: shap.Explanation) -> shap.Explanation:
     values = np.asarray(shap_values.values)
     if values.ndim == 3:
         base_values = np.asarray(shap_values.base_values)
+        n_outputs = values.shape[-1]
+        if base_values.ndim == 2:
+            positive_base_values = base_values[:, -1]
+        elif base_values.ndim == 1 and base_values.shape[0] == n_outputs:
+            positive_base_values = base_values[-1]
+        else:
+            positive_base_values = base_values
         return shap.Explanation(
             values=values[:, :, -1],
-            base_values=base_values[:, -1] if base_values.ndim == 2 else base_values,
+            base_values=positive_base_values,
             data=shap_values.data,
             feature_names=shap_values.feature_names,
         )
@@ -71,7 +78,25 @@ def plot_shap_summary(
     max_display: int = 20,
     save_path: Path | None = None,
 ) -> plt.Figure:
-    """Create a SHAP summary (beeswarm) plot."""
+    """Create a SHAP summary (beeswarm) plot.
+
+    Parameters
+    ----------
+    shap_values : shap.Explanation
+        SHAP values for the dataset.
+    X : pd.DataFrame
+        Feature matrix used to compute SHAP values.
+    max_display : int
+        Maximum number of features to display.
+    save_path : Path or None
+        If given, ``stem`` and ``parent.name`` are extracted and passed to
+        ``save_figure()`` which saves under ``reports/figures/``.
+
+    Returns
+    -------
+    plt.Figure
+        The summary plot figure.
+    """
     pos_class = _extract_positive_class(shap_values)
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -97,6 +122,23 @@ def plot_shap_dependence(
     For multi-output SHAP values (e.g., binary tree classifiers that return
     shape (n_samples, n_features, 2)), this plots the positive class
     (last output) so that shap.dependence_plot receives the required 2D array.
+
+    Parameters
+    ----------
+    shap_values : shap.Explanation
+        SHAP values for the dataset.
+    X : pd.DataFrame
+        Feature matrix used to compute SHAP values.
+    feature : str
+        Name of the feature to plot.
+    save_path : Path or None
+        If given, ``stem`` and ``parent.name`` are extracted and passed to
+        ``save_figure()`` which saves under ``reports/figures/``.
+
+    Returns
+    -------
+    plt.Figure
+        The dependence plot figure.
     """
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -151,7 +193,8 @@ def plot_shap_waterfall(
     max_display : int
         Maximum number of features to display.
     save_path : Path or None
-        If given, save the figure to this path.
+        If given, ``stem`` and ``parent.name`` are extracted and passed to
+        ``save_figure()`` which saves under ``reports/figures/``.
 
     Returns
     -------
@@ -186,7 +229,8 @@ def compare_feature_importance(
     builtin_label : str
         Label for the built-in importance axis and title.
     save_path : Path or None
-        If given, save the figure.
+        If given, ``stem`` and ``parent.name`` are extracted and passed to
+        ``save_figure()`` which saves under ``reports/figures/``.
 
     Returns
     -------
