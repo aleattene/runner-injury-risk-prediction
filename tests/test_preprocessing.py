@@ -184,11 +184,17 @@ class TestIO:
         with pytest.raises(FileNotFoundError):
             load_model(name="nonexistent", input_dir=tmp_path)
 
-    def test_load_model_path_traversal_raises(self, tmp_path: Path):
+    def test_save_model_path_traversal_raises(self, tmp_path: Path):
         from src.preprocessing.io import save_model
 
         with pytest.raises(ValueError, match="path separators"):
             save_model(None, name="../evil", output_dir=tmp_path)
+
+    def test_load_model_path_traversal_raises(self, tmp_path: Path):
+        from src.preprocessing.io import load_model
+
+        with pytest.raises(ValueError, match="path separators"):
+            load_model(name="../evil", input_dir=tmp_path)
 
     def test_load_missing_file_raises(self, tmp_path: Path):
         from src.preprocessing.io import load_scaler, load_splits
