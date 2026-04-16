@@ -72,13 +72,14 @@ def plot_shap_summary(
     save_path: Path | None = None,
 ) -> plt.Figure:
     """Create a SHAP summary (beeswarm) plot."""
+    pos_class = _extract_positive_class(shap_values)
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore",
             message="The NumPy global RNG was seeded",
             category=FutureWarning,
         )
-        shap.summary_plot(shap_values, X, max_display=max_display, show=False)
+        shap.summary_plot(pos_class, X, max_display=max_display, show=False)
     fig = plt.gcf()
     if save_path:
         save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
