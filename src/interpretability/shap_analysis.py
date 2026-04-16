@@ -32,8 +32,16 @@ def _extract_positive_class(shap_values: shap.Explanation) -> shap.Explanation:
             positive_base_values = base_values[:, -1]
         elif base_values.ndim == 1 and base_values.shape[0] == n_outputs:
             positive_base_values = base_values[-1]
+        elif base_values.ndim == 0:
+            n_samples = values.shape[0]
+            positive_base_values = np.full(n_samples, base_values)
         else:
-            positive_base_values = base_values
+            raise ValueError(
+                f"Unexpected base_values shape {base_values.shape} "
+                f"for 3D SHAP values with {n_outputs} outputs. "
+                "Expected 2D (n_samples, n_outputs), "
+                "1D (n_outputs,), or scalar."
+            )
         return shap.Explanation(
             values=values[:, :, -1],
             base_values=positive_base_values,
@@ -263,7 +271,7 @@ def compare_feature_importance(
     axes[1].set_title("Built-in Importance")
 
     fig.suptitle(f"Feature Importance: SHAP vs {builtin_label}", fontsize=14)
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
 
     if save_path:
         save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
