@@ -11,7 +11,7 @@ import shap
 from sklearn.base import BaseEstimator
 from sklearn.linear_model import LogisticRegression
 
-from src.utils.plotting import save_figure
+from src.utils.plotting import PALETTE, save_figure
 
 logger = logging.getLogger(__name__)
 
@@ -257,14 +257,14 @@ def compare_feature_importance(
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     # SHAP importance (left)
-    axes[0].barh(range(n_bars), shap_vals[::-1], color="#2196F3")
+    axes[0].barh(range(n_bars), shap_vals[::-1], color=PALETTE["primary"])
     axes[0].set_yticks(range(n_bars))
     axes[0].set_yticklabels(sorted_features[::-1])
     axes[0].set_xlabel("Mean |SHAP value|")
     axes[0].set_title("SHAP Importance")
 
     # Built-in importance (right)
-    axes[1].barh(range(n_bars), builtin_vals[::-1], color="#FF9800")
+    axes[1].barh(range(n_bars), builtin_vals[::-1], color=PALETTE["secondary"])
     axes[1].set_yticks(range(n_bars))
     axes[1].set_yticklabels(sorted_features[::-1])
     axes[1].set_xlabel(builtin_label)

@@ -173,6 +173,21 @@ class TestPlotShapSummary:
             assert fig is not None
             mock_save.assert_called_once()
 
+    def test_returns_figure_with_tree_model(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_summary,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("random_forest")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        fig = plot_shap_summary(shap_values, X)
+        assert fig is not None
+        assert hasattr(fig, "savefig")
+        plt.close(fig)
+
 
 class TestPlotShapDependence:
     """Tests for plot_shap_dependence."""
