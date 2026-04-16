@@ -45,7 +45,6 @@ def create_model(
         return LogisticRegression(
             class_weight="balanced",
             max_iter=1000,
-            random_state=random_state,
             solver="lbfgs",
         )
     elif name == "random_forest":
