@@ -1,10 +1,13 @@
-"""I/O helpers for persisting processed train/test splits and fitted scalers."""
+"""
+I/O helpers for persisting processed train/test splits, fitted scalers, and models.
+"""
 
 import logging
 from pathlib import Path
 
 import joblib
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
 
 from src.config import PROCESSED_DATA_DIR
@@ -131,3 +134,43 @@ def load_scaler(
     scaler: StandardScaler = joblib.load(path)
     logger.info("Loaded scaler from %s", path.name)
     return scaler
+
+
+def save_model(
+    model: BaseEstimator,
+    name: str,
+    output_dir: Path = PROCESSED_DATA_DIR,
+) -> None:
+    """Persist a fitted model with joblib."""
+    _validate_identifier(name)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path: Path = output_dir / f"{name}.pkl"
+    joblib.dump(model, path)
+    logger.info("Saved model to %s", path.name)
+
+
+def load_model(
+    name: str,
+    input_dir: Path = PROCESSED_DATA_DIR,
+) -> BaseEstimator:
+    """Load a fitted model from disk.
+
+    Security note:
+        ``joblib.load()`` deserializes pickle data and must only be used with
+        trusted, locally generated model artifacts. Do not point this function
+        at untrusted directories or externally supplied ``.pkl`` files.
+    """
+    _validate_identifier(name)
+    base_dir: Path = input_dir.resolve()
+    path: Path = (base_dir / f"{name}.pkl").resolve()
+    try:
+        path.relative_to(base_dir)
+    except ValueError as exc:
+        msg = f"Refusing to load model from outside the trusted directory: {path}"
+        raise ValueError(msg) from exc
+    if not path.exists():
+        msg = f"Model file not found: {path}"
+        raise FileNotFoundError(msg)
+    model: BaseEstimator = joblib.load(path)
+    logger.info("Loaded model from %s", path.name)
+    return model

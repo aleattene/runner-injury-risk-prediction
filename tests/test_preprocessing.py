@@ -160,6 +160,42 @@ class TestIO:
         np.testing.assert_array_almost_equal(scaler.mean_, loaded.mean_)
         np.testing.assert_array_almost_equal(scaler.scale_, loaded.scale_)
 
+    def test_save_load_model_roundtrip(self, tmp_path: Path):
+        from sklearn.linear_model import LogisticRegression
+
+        from src.preprocessing.io import load_model, save_model
+
+        model = LogisticRegression(random_state=42, max_iter=200)
+        X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+        y = np.array([0, 0, 1, 1])
+        model.fit(X, y)
+
+        save_model(model, name="test_model", output_dir=tmp_path)
+        loaded = load_model(name="test_model", input_dir=tmp_path)
+
+        np.testing.assert_array_equal(model.predict(X), loaded.predict(X))
+        np.testing.assert_array_almost_equal(
+            model.predict_proba(X), loaded.predict_proba(X)
+        )
+
+    def test_load_model_missing_raises(self, tmp_path: Path):
+        from src.preprocessing.io import load_model
+
+        with pytest.raises(FileNotFoundError):
+            load_model(name="nonexistent", input_dir=tmp_path)
+
+    def test_save_model_path_traversal_raises(self, tmp_path: Path):
+        from src.preprocessing.io import save_model
+
+        with pytest.raises(ValueError, match="path separators"):
+            save_model(None, name="../evil", output_dir=tmp_path)
+
+    def test_load_model_path_traversal_raises(self, tmp_path: Path):
+        from src.preprocessing.io import load_model
+
+        with pytest.raises(ValueError, match="path separators"):
+            load_model(name="../evil", input_dir=tmp_path)
+
     def test_load_missing_file_raises(self, tmp_path: Path):
         from src.preprocessing.io import load_scaler, load_splits
 

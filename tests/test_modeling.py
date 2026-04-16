@@ -26,6 +26,10 @@ class TestCreateModel:
         model = create_model("xgboost", imbalance_ratio=72.0)
         assert model.get_params()["scale_pos_weight"] == pytest.approx(72.0)
 
+    def test_dummy_strategy(self):
+        model = create_model("dummy")
+        assert model.get_params()["strategy"] == "stratified"
+
 
 class TestCrossValidateModel:
     """Tests for cross_validate_model."""
