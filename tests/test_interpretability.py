@@ -3,7 +3,94 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+import shap
+
 from src.modeling.models import create_model
+
+
+class TestExtractPositiveClass:
+    """Tests for _extract_positive_class with constructed Explanation objects."""
+
+    def test_2d_values_returned_unchanged(self):
+        from src.interpretability.shap_analysis import _extract_positive_class
+
+        values = np.random.default_rng(0).standard_normal((10, 4))
+        base_values = np.zeros(10)
+        explanation = shap.Explanation(
+            values=values,
+            base_values=base_values,
+            data=np.zeros((10, 4)),
+            feature_names=["a", "b", "c", "d"],
+        )
+        result = _extract_positive_class(explanation)
+        np.testing.assert_array_equal(result.values, values)
+
+    def test_3d_values_with_2d_base_values(self):
+        from src.interpretability.shap_analysis import _extract_positive_class
+
+        rng = np.random.default_rng(1)
+        values_3d = rng.standard_normal((10, 4, 2))
+        base_2d = rng.standard_normal((10, 2))
+        explanation = shap.Explanation(
+            values=values_3d,
+            base_values=base_2d,
+            data=np.zeros((10, 4)),
+            feature_names=["a", "b", "c", "d"],
+        )
+        result = _extract_positive_class(explanation)
+        assert result.values.shape == (10, 4)
+        np.testing.assert_array_equal(result.values, values_3d[:, :, -1])
+        np.testing.assert_array_equal(result.base_values, base_2d[:, -1])
+
+    def test_3d_values_with_1d_base_values_n_outputs(self):
+        from src.interpretability.shap_analysis import _extract_positive_class
+
+        rng = np.random.default_rng(2)
+        values_3d = rng.standard_normal((10, 4, 2))
+        base_1d = np.array([0.3, 0.7])  # shape (n_outputs,)
+        explanation = shap.Explanation(
+            values=values_3d,
+            base_values=base_1d,
+            data=np.zeros((10, 4)),
+            feature_names=["a", "b", "c", "d"],
+        )
+        result = _extract_positive_class(explanation)
+        assert result.values.shape == (10, 4)
+        assert result.base_values == pytest.approx(0.7)
+
+    def test_3d_values_with_scalar_base_values(self):
+        from src.interpretability.shap_analysis import _extract_positive_class
+
+        rng = np.random.default_rng(3)
+        values_3d = rng.standard_normal((10, 4, 2))
+        base_scalar = np.float64(0.5)
+        explanation = shap.Explanation(
+            values=values_3d,
+            base_values=base_scalar,
+            data=np.zeros((10, 4)),
+            feature_names=["a", "b", "c", "d"],
+        )
+        result = _extract_positive_class(explanation)
+        assert result.values.shape == (10, 4)
+        np.testing.assert_array_equal(result.base_values, np.full(10, 0.5))
+
+    def test_3d_values_with_incompatible_base_values_raises(self):
+        from src.interpretability.shap_analysis import _extract_positive_class
+
+        rng = np.random.default_rng(4)
+        values_3d = rng.standard_normal((10, 4, 2))
+        base_bad = rng.standard_normal((5,))  # 1D but shape != n_outputs
+        explanation = shap.Explanation(
+            values=values_3d,
+            base_values=base_bad,
+            data=np.zeros((10, 4)),
+            feature_names=["a", "b", "c", "d"],
+        )
+        with pytest.raises(ValueError, match="Unexpected base_values shape"):
+            _extract_positive_class(explanation)
 
 
 class TestComputeShapValues:
@@ -86,6 +173,21 @@ class TestPlotShapSummary:
             assert fig is not None
             mock_save.assert_called_once()
 
+    def test_returns_figure_with_tree_model(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_summary,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("random_forest")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        fig = plot_shap_summary(shap_values, X)
+        assert fig is not None
+        assert hasattr(fig, "savefig")
+        plt.close(fig)
+
 
 class TestPlotShapDependence:
     """Tests for plot_shap_dependence."""
@@ -122,3 +224,73 @@ class TestPlotShapDependence:
             )
             assert fig is not None
             mock_save.assert_called_once()
+
+
+class TestPlotShapWaterfall:
+    """Tests for plot_shap_waterfall."""
+
+    def test_returns_figure(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_waterfall,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("random_forest")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        fig = plot_shap_waterfall(shap_values, index=0)
+        assert fig is not None
+        assert hasattr(fig, "savefig")
+        plt.close(fig)
+
+    def test_with_save_path(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            plot_shap_waterfall,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("random_forest")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        with patch("src.interpretability.shap_analysis.save_figure") as mock_save:
+            fig = plot_shap_waterfall(shap_values, index=0, save_path=Path("dummy.png"))
+            assert fig is not None
+            mock_save.assert_called_once()
+        plt.close(fig)
+
+
+class TestGetShapImportanceDict:
+    """Tests for get_shap_importance_dict."""
+
+    def test_returns_dict_with_all_features(self, small_xy_groups):
+        from src.interpretability.shap_analysis import (
+            compute_shap_values,
+            get_shap_importance_dict,
+        )
+
+        X, y, _ = small_xy_groups
+        model = create_model("random_forest")
+        model.fit(X, y)
+        shap_values = compute_shap_values(model, X)
+        importance = get_shap_importance_dict(shap_values)
+        assert isinstance(importance, dict)
+        assert len(importance) == X.shape[1]
+        assert all(v >= 0 for v in importance.values())
+
+
+class TestCompareFeatureImportance:
+    """Tests for compare_feature_importance."""
+
+    def test_returns_figure(self, small_xy_groups):
+        from src.interpretability.shap_analysis import compare_feature_importance
+
+        X, _, _ = small_xy_groups
+        features = list(X.columns)
+        shap_imp = {f: float(i + 1) for i, f in enumerate(features)}
+        builtin_imp = {f: float(len(features) - i) for i, f in enumerate(features)}
+        fig = compare_feature_importance(shap_imp, builtin_imp, top_n=3)
+        assert fig is not None
+        assert hasattr(fig, "savefig")
+        plt.close(fig)
