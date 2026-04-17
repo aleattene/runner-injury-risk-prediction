@@ -143,6 +143,57 @@ class TestCreateAthleteGroups:
         assert groups.iloc[0] == "high_density"
         assert groups.iloc[1] == "low_density"
 
+    def test_reference_df_disjoint_athletes_raises(self):
+        """Disjoint athletes between df and reference_df should raise."""
+        from src.fairness.audit import create_athlete_groups
+
+        reference_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 0],
+                INJURY_COL: [0, 1],
+                "day_0_total_km": [5, 6],
+            }
+        )
+        test_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [1, 2],
+                INJURY_COL: [0, 0],
+                "day_0_total_km": [7, 8],
+            }
+        )
+        with pytest.raises(ValueError, match="not present in reference_df"):
+            create_athlete_groups(
+                test_df,
+                method="injury_history",
+                reference_df=reference_df,
+            )
+
+    def test_reference_df_partial_overlap_raises(self):
+        """Partial overlap (some athletes missing) should also raise."""
+        from src.fairness.audit import create_athlete_groups
+
+        reference_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 0],
+                INJURY_COL: [0, 1],
+                "day_0_total_km": [5, 6],
+            }
+        )
+        test_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 1],  # athlete 1 not in reference
+                INJURY_COL: [0, 0],
+                "day_0_total_km": [5, 7],
+            }
+        )
+        with pytest.raises(ValueError, match="not present in reference_df"):
+            create_athlete_groups(
+                test_df,
+                method="volume",
+                feature_col="day_0_total_km",
+                reference_df=reference_df,
+            )
+
 
 class TestComputeGroupMetrics:
     """Tests for compute_group_metrics."""
@@ -283,6 +334,15 @@ class TestPlotGroupMetricsBars:
             finally:
                 plt.close(fig)
 
+    def test_empty_metrics_df_raises(self):
+        from src.fairness.audit import plot_group_metrics_bars
+
+        empty_df = pd.DataFrame(
+            columns=["group", "recall", "precision", "f1", "fpr", "auc_roc"]
+        )
+        with pytest.raises(ValueError, match="metrics_df is empty"):
+            plot_group_metrics_bars(empty_df)
+
 
 class TestPlotDisparityRatios:
     """Tests for plot_disparity_ratios."""
@@ -335,6 +395,16 @@ class TestPlotDisparityRatios:
             assert "nan_group" in legend_labels
         finally:
             plt.close(fig)
+
+    def test_no_ratio_cols_raises(self):
+        """DataFrame without *_ratio columns should raise ValueError."""
+        from src.fairness.audit import plot_disparity_ratios
+
+        disp_df = pd.DataFrame(
+            {"group": ["A", "B"], "recall": [0.8, 0.6], "precision": [0.7, 0.5]}
+        )
+        with pytest.raises(ValueError, match="ratio"):
+            plot_disparity_ratios(disp_df)
 
     def test_multiple_non_reference_groups_no_overplot(self):
         """Multiple non-reference groups should have distinct bar offsets."""

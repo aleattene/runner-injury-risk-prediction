@@ -57,6 +57,18 @@ def create_athlete_groups(
     source = reference_df if reference_df is not None else df
     athlete_ids = df[ATHLETE_ID_COL]
 
+    # Validate that df athletes exist in the reference source
+    if reference_df is not None:
+        source_athletes = set(reference_df[ATHLETE_ID_COL].unique())
+        target_athletes = set(df[ATHLETE_ID_COL].unique())
+        missing = target_athletes - source_athletes
+        if missing:
+            raise ValueError(
+                f"Athletes {missing} in df are not present in reference_df. "
+                "With athlete-disjoint train/test splits, reference_df cannot "
+                "map groups onto df. Compute groups directly from df instead."
+            )
+
     if method == "volume":
         if feature_col is None:
             raise ValueError("feature_col required for 'volume' method")
@@ -207,6 +219,9 @@ def plot_group_metrics_bars(
     -------
     matplotlib.figure.Figure
     """
+    if metrics_df.empty:
+        raise ValueError("metrics_df is empty — nothing to plot")
+
     if metrics is None:
         metrics = [c for c in _METRIC_COLS if c in metrics_df.columns]
 
@@ -273,6 +288,10 @@ def plot_disparity_ratios(
     matplotlib.figure.Figure
     """
     ratio_cols = [c for c in disparity_df.columns if c.endswith("_ratio")]
+    if not ratio_cols:
+        raise ValueError(
+            "disparity_df must contain at least one '*_ratio' column to plot"
+        )
     # Exclude reference group (all defined ratios ≈ 1.0).
     # Rows with all-NaN ratios are NOT treated as reference.
     is_ref = disparity_df[ratio_cols].apply(
