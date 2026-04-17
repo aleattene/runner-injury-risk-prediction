@@ -8,9 +8,12 @@ this module constructs proxy groups from training data characteristics:
 """
 
 import logging
+from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from sklearn.metrics import (
     f1_score,
     precision_score,
@@ -19,6 +22,7 @@ from sklearn.metrics import (
 )
 
 from src.config import ATHLETE_ID_COL, INJURY_COL
+from src.utils.plotting import PALETTE, save_figure
 
 logger = logging.getLogger(__name__)
 
@@ -161,3 +165,186 @@ def compute_disparity_ratios(
         else:
             result[f"{col}_ratio"] = np.nan
     return result
+
+
+# ---------------------------------------------------------------------------
+# Visualization helpers
+# ---------------------------------------------------------------------------
+
+_METRIC_COLS: list[str] = ["recall", "precision", "f1", "fpr", "auc_roc"]
+
+
+def plot_group_metrics_bars(
+    metrics_df: pd.DataFrame,
+    title: str = "Per-Group Classification Metrics",
+    metrics: list[str] | None = None,
+    save_path: Path | None = None,
+) -> plt.Figure:
+    """Grouped horizontal bar chart comparing metrics across groups.
+
+    Parameters
+    ----------
+    metrics_df : pd.DataFrame
+        Output of :func:`compute_group_metrics`.
+    title : str
+        Plot title.
+    metrics : list[str] or None
+        Metric columns to plot (default: recall, precision, f1, fpr, auc_roc).
+    save_path : Path or None
+        If given, ``save_path.parent.name`` is the sub-directory and
+        ``save_path.stem`` is the file name passed to :func:`save_figure`.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    if metrics is None:
+        metrics = [c for c in _METRIC_COLS if c in metrics_df.columns]
+
+    groups = metrics_df["group"].tolist()
+    n_groups = len(groups)
+    n_metrics = len(metrics)
+    bar_colors = [PALETTE["primary"], PALETTE["secondary"], PALETTE["neutral"]]
+
+    y = np.arange(n_metrics)
+    height = 0.8 / n_groups
+
+    fig, ax = plt.subplots(figsize=(10, max(4, n_metrics * 0.8)))
+    for i, group in enumerate(groups):
+        row = metrics_df.loc[metrics_df["group"] == group]
+        values = [
+            float(row[m].iloc[0]) if pd.notna(row[m].iloc[0]) else 0.0 for m in metrics
+        ]
+        offset = (i - (n_groups - 1) / 2) * height
+        ax.barh(
+            y + offset,
+            values,
+            height,
+            label=group,
+            color=bar_colors[i % len(bar_colors)],
+            alpha=0.85,
+        )
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(metrics)
+    ax.set_xlabel("Score")
+    ax.set_title(title, fontweight="bold")
+    ax.legend()
+    ax.set_xlim(0, 1.05)
+    fig.tight_layout()
+
+    if save_path:
+        save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
+    return fig
+
+
+def plot_disparity_ratios(
+    disparity_df: pd.DataFrame,
+    title: str = "Disparity Ratios (reference = 1.0)",
+    save_path: Path | None = None,
+) -> plt.Figure:
+    """Horizontal bar chart of disparity ratios with a 1.0 reference line.
+
+    Rows where *all* ratio columns equal 1.0 (the reference group) are excluded
+    from the plot so that only non-reference groups appear.
+
+    Parameters
+    ----------
+    disparity_df : pd.DataFrame
+        Output of :func:`compute_disparity_ratios`.
+    title : str
+        Plot title.
+    save_path : Path or None
+        If given, ``save_path.parent.name`` is the sub-directory and
+        ``save_path.stem`` is the file name passed to :func:`save_figure`.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    ratio_cols = [c for c in disparity_df.columns if c.endswith("_ratio")]
+    # Exclude reference group (all ratios == 1.0)
+    is_ref = disparity_df[ratio_cols].apply(
+        lambda row: all(np.isclose(v, 1.0) for v in row if pd.notna(v)), axis=1
+    )
+    plot_df = disparity_df.loc[~is_ref].copy()
+
+    metric_labels = [c.replace("_ratio", "") for c in ratio_cols]
+    n_metrics = len(ratio_cols)
+
+    fig, ax = plt.subplots(figsize=(10, max(4, n_metrics * 0.9)))
+    y = np.arange(n_metrics)
+
+    for _, row in plot_df.iterrows():
+        values = [float(row[c]) if pd.notna(row[c]) else 0.0 for c in ratio_cols]
+        colors = [
+            PALETTE["positive"] if v >= 1.0 else PALETTE["negative"] for v in values
+        ]
+        ax.barh(y, values, color=colors, alpha=0.85, label=row["group"])
+
+    ax.axvline(
+        1.0,
+        color=PALETTE["neutral"],
+        linestyle="--",
+        linewidth=1.5,
+        label="Parity (1.0)",
+    )
+    ax.set_yticks(y)
+    ax.set_yticklabels(metric_labels)
+    ax.set_xlabel("Disparity Ratio")
+    ax.set_title(title, fontweight="bold")
+    ax.legend()
+    fig.tight_layout()
+
+    if save_path:
+        save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
+    return fig
+
+
+def plot_fairness_summary_heatmap(
+    all_metrics: dict[str, pd.DataFrame],
+    title: str = "Fairness Metrics Across Grouping Methods",
+    save_path: Path | None = None,
+) -> plt.Figure:
+    """Heatmap showing metrics for all grouping methods at a glance.
+
+    Parameters
+    ----------
+    all_metrics : dict[str, pd.DataFrame]
+        Mapping ``{method_name: metrics_df}`` from :func:`compute_group_metrics`.
+    title : str
+        Plot title.
+    save_path : Path or None
+        If given, ``save_path.parent.name`` is the sub-directory and
+        ``save_path.stem`` is the file name passed to :func:`save_figure`.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    rows: list[dict] = []
+    for method, df in all_metrics.items():
+        for _, r in df.iterrows():
+            row_label = f"{method} | {r['group']}"
+            entry: dict = {"label": row_label}
+            for col in _METRIC_COLS:
+                if col in r.index:
+                    entry[col] = r[col]
+            rows.append(entry)
+
+    heat_df = pd.DataFrame(rows).set_index("label")
+    fig, ax = plt.subplots(figsize=(10, max(4, len(heat_df) * 0.7)))
+    sns.heatmap(
+        heat_df.astype(float),
+        annot=True,
+        fmt=".3f",
+        cmap="YlOrRd",
+        linewidths=0.5,
+        ax=ax,
+    )
+    ax.set_title(title, fontweight="bold")
+    fig.tight_layout()
+
+    if save_path:
+        save_figure(fig, save_path.stem, save_path.parent.name or None, close=False)
+    return fig
