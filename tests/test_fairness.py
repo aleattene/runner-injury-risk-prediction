@@ -62,6 +62,87 @@ class TestCreateAthleteGroups:
         with pytest.raises(ValueError, match="Unknown method"):
             create_athlete_groups(df, method="nonexistent")
 
+    def test_reference_df_injury_history(self):
+        """Group membership computed from reference_df, mapped onto df."""
+        from src.fairness.audit import create_athlete_groups
+
+        # reference_df: athlete 1 has injury; df (test): athlete 1 has no injury
+        reference_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 0, 1, 1],
+                INJURY_COL: [0, 0, 0, 1],
+                "day_0_total_km": [5, 6, 7, 8],
+            }
+        )
+        test_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 1],
+                INJURY_COL: [0, 0],  # no injuries in test set
+                "day_0_total_km": [5, 7],
+            }
+        )
+        groups = create_athlete_groups(
+            test_df,
+            method="injury_history",
+            reference_df=reference_df,
+        )
+        # Athlete 1 is "ever_injured" based on reference_df, NOT test_df
+        assert groups.iloc[1] == "ever_injured"
+        assert groups.iloc[0] == "never_injured"
+
+    def test_reference_df_volume(self):
+        """Volume median computed from reference_df, applied to df."""
+        from src.fairness.audit import create_athlete_groups
+
+        reference_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 0, 1, 1],
+                INJURY_COL: [0, 0, 0, 0],
+                "day_0_total_km": [10, 12, 2, 3],
+            }
+        )
+        test_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 1],
+                INJURY_COL: [0, 0],
+                "day_0_total_km": [5, 5],
+            }
+        )
+        groups = create_athlete_groups(
+            test_df,
+            method="volume",
+            feature_col="day_0_total_km",
+            reference_df=reference_df,
+        )
+        assert groups.iloc[0] == "high_volume"
+        assert groups.iloc[1] == "low_volume"
+
+    def test_reference_df_data_density(self):
+        """Data density median computed from reference_df, applied to df."""
+        from src.fairness.audit import create_athlete_groups
+
+        reference_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 0, 0, 1],
+                INJURY_COL: [0, 0, 0, 0],
+                "day_0_total_km": [5, 6, 7, 8],
+            }
+        )
+        test_df = pd.DataFrame(
+            {
+                ATHLETE_ID_COL: [0, 1],
+                INJURY_COL: [0, 0],
+                "day_0_total_km": [5, 8],
+            }
+        )
+        groups = create_athlete_groups(
+            test_df,
+            method="data_density",
+            reference_df=reference_df,
+        )
+        assert groups.iloc[0] == "high_density"
+        assert groups.iloc[1] == "low_density"
+
 
 class TestComputeGroupMetrics:
     """Tests for compute_group_metrics."""
@@ -232,6 +313,50 @@ class TestPlotDisparityRatios:
         finally:
             plt.close(fig)
 
+    def test_all_nan_ratios_not_treated_as_reference(self):
+        """Rows with all-NaN ratios should NOT be excluded as reference."""
+        from src.fairness.audit import plot_disparity_ratios
+
+        disp_df = pd.DataFrame(
+            {
+                "group": ["ref", "nan_group"],
+                "recall_ratio": [1.0, np.nan],
+                "precision_ratio": [1.0, np.nan],
+                "f1_ratio": [1.0, np.nan],
+                "fpr_ratio": [1.0, np.nan],
+                "auc_roc_ratio": [1.0, np.nan],
+            }
+        )
+        fig = plot_disparity_ratios(disp_df)
+        try:
+            ax = fig.axes[0]
+            # nan_group should appear in legend (not excluded)
+            legend_labels = [t.get_text() for t in ax.get_legend().get_texts()]
+            assert "nan_group" in legend_labels
+        finally:
+            plt.close(fig)
+
+    def test_multiple_non_reference_groups_no_overplot(self):
+        """Multiple non-reference groups should have distinct bar offsets."""
+        from src.fairness.audit import plot_disparity_ratios
+
+        disp_df = pd.DataFrame(
+            {
+                "group": ["ref", "group_x", "group_y"],
+                "recall_ratio": [1.0, 1.5, 0.7],
+                "auc_roc_ratio": [1.0, 1.2, 0.9],
+            }
+        )
+        fig = plot_disparity_ratios(disp_df)
+        try:
+            ax = fig.axes[0]
+            # Should have bars for both non-reference groups
+            legend_labels = [t.get_text() for t in ax.get_legend().get_texts()]
+            assert "group_x" in legend_labels
+            assert "group_y" in legend_labels
+        finally:
+            plt.close(fig)
+
 
 class TestPlotFairnessSummaryHeatmap:
     """Tests for plot_fairness_summary_heatmap."""
@@ -261,3 +386,18 @@ class TestPlotFairnessSummaryHeatmap:
                 )
             finally:
                 plt.close(fig)
+
+    def test_empty_dict_raises(self):
+        from src.fairness.audit import plot_fairness_summary_heatmap
+
+        with pytest.raises(ValueError, match="all_metrics is empty"):
+            plot_fairness_summary_heatmap({})
+
+    def test_all_empty_dataframes_raises(self):
+        from src.fairness.audit import plot_fairness_summary_heatmap
+
+        empty_df = pd.DataFrame(
+            columns=["group", "recall", "precision", "f1", "fpr", "auc_roc"]
+        )
+        with pytest.raises(ValueError, match="all empty"):
+            plot_fairness_summary_heatmap({"volume": empty_df})
