@@ -343,6 +343,13 @@ class TestPlotGroupMetricsBars:
         with pytest.raises(ValueError, match="metrics_df is empty"):
             plot_group_metrics_bars(empty_df)
 
+    def test_no_metric_columns_raises(self):
+        from src.fairness.audit import plot_group_metrics_bars
+
+        df = pd.DataFrame({"group": ["A", "B"], "support": [100, 80]})
+        with pytest.raises(ValueError, match="No metric columns"):
+            plot_group_metrics_bars(df)
+
 
 class TestPlotDisparityRatios:
     """Tests for plot_disparity_ratios."""
@@ -393,6 +400,26 @@ class TestPlotDisparityRatios:
             # nan_group should appear in legend (not excluded)
             legend_labels = [t.get_text() for t in ax.get_legend().get_texts()]
             assert "nan_group" in legend_labels
+        finally:
+            plt.close(fig)
+
+    def test_partial_nan_ratio_not_treated_as_reference(self):
+        """Row with one ratio=1.0 and others NaN should NOT be excluded."""
+        from src.fairness.audit import plot_disparity_ratios
+
+        disp_df = pd.DataFrame(
+            {
+                "group": ["ref", "partial"],
+                "recall_ratio": [1.0, 1.0],
+                "precision_ratio": [1.0, np.nan],
+                "f1_ratio": [1.0, np.nan],
+            }
+        )
+        fig = plot_disparity_ratios(disp_df)
+        try:
+            ax = fig.axes[0]
+            legend_labels = [t.get_text() for t in ax.get_legend().get_texts()]
+            assert "partial" in legend_labels
         finally:
             plt.close(fig)
 

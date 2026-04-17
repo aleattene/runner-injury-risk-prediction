@@ -44,10 +44,13 @@ def create_athlete_groups(
     feature_col : str or None
         For "volume" method, the column to aggregate (e.g., "day_0_total_km").
     reference_df : pd.DataFrame or None
-        If provided, group membership is computed from this DataFrame
-        (typically the training set) and mapped onto *df*.  This avoids
-        using test-set outcome data for group assignment
-        (e.g., injury_history).
+        If provided, group membership is computed from this DataFrame and
+        mapped onto *df* to avoid using *df* itself for group assignment
+        (e.g., when deriving "injury_history"). All athletes present in *df*
+        must also be present in *reference_df*; otherwise a ValueError is
+        raised. In particular, with athlete-disjoint train/test splits the
+        training set cannot be used as *reference_df* for the test set.
+        In that case, compute groups directly from *df* instead.
 
     Returns
     -------
@@ -225,6 +228,12 @@ def plot_group_metrics_bars(
     if metrics is None:
         metrics = [c for c in _METRIC_COLS if c in metrics_df.columns]
 
+    if not metrics:
+        raise ValueError(
+            "No metric columns to plot. Provide a non-empty `metrics` list "
+            f"or ensure metrics_df contains at least one of: {_METRIC_COLS}"
+        )
+
     groups = metrics_df["group"].tolist()
     n_groups = len(groups)
     n_metrics = len(metrics)
@@ -295,8 +304,7 @@ def plot_disparity_ratios(
     # Exclude reference group (all defined ratios ≈ 1.0).
     # Rows with all-NaN ratios are NOT treated as reference.
     is_ref = disparity_df[ratio_cols].apply(
-        lambda row: row.notna().any()
-        and all(np.isclose(v, 1.0) for v in row if pd.notna(v)),
+        lambda row: row.notna().all() and np.isclose(row.astype(float), 1.0).all(),
         axis=1,
     )
     plot_df = disparity_df.loc[~is_ref].copy()
@@ -312,7 +320,11 @@ def plot_disparity_ratios(
     for idx, (_, row) in enumerate(plot_df.iterrows()):
         values = [float(row[c]) if pd.notna(row[c]) else np.nan for c in ratio_cols]
         colors = [
-            PALETTE["positive"] if pd.notna(v) and v >= 1.0 else PALETTE["negative"]
+            (
+                PALETTE["neutral"]
+                if pd.isna(v)
+                else PALETTE["positive"] if v >= 1.0 else PALETTE["negative"]
+            )
             for v in values
         ]
         offset = (idx - (n_groups - 1) / 2) * bar_height
