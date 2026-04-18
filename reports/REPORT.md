@@ -363,7 +363,7 @@ All figures are saved in `reports/figures/` organized by analysis phase:
 
 ### Architecture Decision Records
 
-Key design decisions are documented in `docs/ADR.md` (to be published in a future release):
+Key design decisions are summarized below; a dedicated ADR document will be published in a future release:
 
 | ADR | Decision |
 |---|---|
