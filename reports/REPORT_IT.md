@@ -302,7 +302,7 @@ per individuare divari sistematici nelle performance.
 
 - I gruppi proxy non sono attributi protetti — bias sistematici per età,
   sesso o etnia non possono essere rilevati né esclusi
-- Il piccolo cohort di atleti (74 totali, ~15 nel test set) limita la potenza
+- La piccola coorte di atleti (74 totali, ~15 nel test set) limita la potenza
   statistica per l'analisi dei sottogruppi
 - I risultati vanno interpretati come esplorativi, non come valutazione di conformità
 
@@ -314,7 +314,7 @@ per individuare divari sistematici nelle performance.
    raggiunge AUC-ROC più elevati tramite riduzione della varianza. Il nostro
    design a singolo modello è più semplice ma meno performante.
 
-2. **Piccolo cohort di atleti**: 74 atleti totali, con circa 15 nel test set.
+2. **Piccola coorte di atleti**: 74 atleti totali, con circa 15 nel test set.
    I risultati potrebbero non generalizzarsi a popolazioni più ampie o diverse.
 
 3. **Nessuna validazione esterna**: la valutazione utilizza uno split held-out
