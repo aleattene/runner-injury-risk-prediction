@@ -221,8 +221,9 @@ scripts/
 .claude/
 
 # TEMP — local-only project notes (not for GitHub)
-CLAUDE.md
-TODO.md
-SKILLS.md
+CLAUDE*.md
+TODO*.md
+SKILLS*.md
+ADR*.md
 docs/
 *.parquet
