@@ -1,5 +1,7 @@
 # Runner Injury Risk Prediction
 
+🇬🇧 English | [🇮🇹 Italiano](README_IT.md)
+
 ![Test & Coverage](https://github.com/aleattene/runner-injury-risk-prediction/actions/workflows/test.yml/badge.svg)
 ![Lint & Format](https://github.com/aleattene/runner-injury-risk-prediction/actions/workflows/lint.yml/badge.svg)
 [![codecov](https://codecov.io/gh/aleattene/runner-injury-risk-prediction/graph/badge.svg?token=9PXXMFOPE2)](https://codecov.io/gh/aleattene/runner-injury-risk-prediction)
@@ -51,7 +53,11 @@ This analysis addresses key questions for sports scientists, coaches, and team p
 
 ## Key Findings
 
-> *Section to be completed after modeling phase.*
+- **Week approach outperforms day approach** — AUC-ROC 0.624 (week) vs 0.588 (day), winning on 5 out of 6 metrics. This reverses the paper's finding, likely because a single XGBoost model benefits more from aggregated, less noisy weekly features than from fine-grained daily data.
+- **92% of paper benchmark reached** — the week model achieves 92.0% of the paper's AUC-ROC (0.678), while the day model reaches 81.2% of the paper's 0.724. The gap is primarily attributable to our single model vs the paper's 100-bag ensemble.
+- **Extreme class imbalance remains the core challenge** — with only ~1.2% injury rate, the day model produces zero recall at the optimal threshold (0.63), while the week model achieves modest recall (6.8%) at threshold 0.64.
+- **SHAP reveals consistent injury risk factors across both approaches** — training volume (total km), subjective markers (perceived exertion, training success), and high-intensity load (zone distributions) drive predictions in both temporal frameworks.
+- **No systematic fairness bias detected** — proxy-group analysis (volume, injury history, data density) shows similar performance profiles across athlete subgroups, though the absence of demographic data limits this assessment.
 
 ---
 
@@ -150,9 +156,9 @@ jupyter notebook notebooks/01_eda_day_approach.ipynb
 
 ## Report & Dashboard
 
-- [Executive Report](#)
-- [EDA Notebook](#)
-- [Looker Studio Dashboard](#)
+- [Executive Report](reports/REPORT.md)
+- [EDA Notebook](notebooks/01_eda_day_approach.ipynb)
+- Looker Studio Dashboard — *deferred*
 
 
 
