@@ -1,6 +1,4 @@
-# Runner Injury Risk Prediction
-
-🇬🇧 English | [🇮🇹 Italiano](README_IT.md)
+# Runner Injury Risk Prediction 🇬🇧 [🇮🇹](README_IT.md)
 
 ![Test & Coverage](https://github.com/aleattene/runner-injury-risk-prediction/actions/workflows/test.yml/badge.svg)
 ![Lint & Format](https://github.com/aleattene/runner-injury-risk-prediction/actions/workflows/lint.yml/badge.svg)
