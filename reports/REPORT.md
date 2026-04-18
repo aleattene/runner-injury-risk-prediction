@@ -64,7 +64,7 @@ accessible and reproducible while accepting a performance trade-off.
 
 | Property | Day approach | Week approach |
 |---|---|---|
-| Source | Lovdal et al. (2021) — elite Dutch runners, 2012–2019 |  |
+| Source | Lovdal et al. (2021) — elite Dutch runners, 2012–2019 | Same as day approach |
 | Athletes | 74 (masked IDs) | 74 (masked IDs) |
 | Total rows | 42,766 | 42,798 |
 | Features | 70 (7 days x 10 metrics) | 69 (3 weeks x 22 metrics + 3 km ratios) |
@@ -90,8 +90,10 @@ correct value for "no activity."
 
 - **Sentinel replacement**: -0.01 → 0.0 for rest days (ADR-007)
 - **Week target binarization**: continuous values binarized at threshold 0.5 (ADR-002)
-- **Train/test split**: GroupShuffleSplit by Athlete ID (80/20), ensuring all
-  observations from one athlete belong to one split only (ADR-006)
+- **Train/test split**: GroupShuffleSplit by Athlete ID with an approximate
+  80/20 split at the athlete-group level, ensuring all observations from one
+  athlete belong to one split only; row-level proportions can differ because
+  athletes contribute unequal numbers of observations (ADR-006)
 - **Feature scaling**: StandardScaler fitted on training data only, applied
   to both train and test sets
 
@@ -354,10 +356,10 @@ All figures are saved in `reports/figures/` organized by analysis phase:
 | EDA | `figures/eda/` | 16 |
 | Preprocessing | `figures/preprocessing/` | 4 |
 | Modeling | `figures/modeling/` | 8 |
-| Interpretability | `figures/interpretability/` | 20 |
+| Interpretability | `figures/interpretability/` | 21 |
 | Fairness | `figures/fairness/` | 15 |
 | Comparison | `figures/comparison/` | 5 |
-| **Total** | | **68** |
+| **Total** | | **69** |
 
 ### Architecture Decision Records
 
